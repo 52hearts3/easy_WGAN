@@ -4,7 +4,7 @@ from torchvision import datasets ,transforms
 from torch.utils.data import DataLoader
 
 class condition_BatchNorm2d(nn.Module):
-    def __init__(self,num_features,num_classes):
+    def __init__(self,num_features,num_classes): #num_features 通道数   num_classes 类别数
         super(condition_BatchNorm2d,self).__init__()
 
         self.num_features=num_features
@@ -15,10 +15,10 @@ class condition_BatchNorm2d(nn.Module):
 
     def forward(self,x,y):
         out=self.bn(x)
-        gamma,beta=self.embed(y).chunk(2,1)
+        gamma,beta=self.embed(y).chunk(2,1)  #在dim=1上一分为二， [num_classes,num_features*2]==>[num_classes,num_features]
         gamma=gamma.view(-1,self.num_features,1,1)
         beta=beta.view(-1,self.num_features,1,1)
-        out=gamma*out+beta
+        out=gamma*out+beta  #[b,ch,1,1]*[b,ch,x,x]==>[b,ch,x,x]  广播
         return out
 
 
@@ -67,7 +67,7 @@ def truncated_noise_sample(batch_size, z_dim, truncation=0.5): #截断函数
     - 截断的潜在向量
     """
     noise=torch.randn(batch_size,z_dim)
-    truncated_noise = torch.clamp(noise, -truncation, truncation)
+    truncated_noise = torch.clamp(noise, -truncation, truncation)  #将noise限制在[-0.5,0.5]
     return truncated_noise
 
 #test
@@ -195,7 +195,7 @@ class Discriminator(nn.Module):
 def gradient_penalty(D,x_real,x_fake,batch_size):
     #[b,1,1,1]
     t=torch.rand(batch_size,1,1,1,device=x_real.device)
-    #[b,3,224,224]
+    #[b,3,32,32]
     t=t.expand_as(x_real)
 
     mid=t*x_real+((1-t)*x_fake)
@@ -227,7 +227,7 @@ image_size = 32
 num_classes = 10
 generator=Generator(z_dim=z_dim,g_dim=g_dim,image_size=image_size,num_classes=num_classes).to(device)
 discriminator=Discriminator(d_dim=g_dim,image_size=image_size).to(device)
-optimizer_G = torch.optim.Adam(generator.parameters(), lr=0.0002, betas=(0.5, 0.999), weight_decay=1e-4)
+optimizer_G = torch.optim.Adam(generator.parameters(), lr=0.0002, betas=(0.5, 0.999), weight_decay=1e-4)  #加入了正则化
 optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999), weight_decay=1e-4)
 
 import matplotlib.pyplot as plt
@@ -267,7 +267,7 @@ for epoch in range(1000):
             fake_x=generator(z,y_real)
 
             real_loss=-torch.mean(discriminator(x_real))
-            fake_loss=torch.mean(discriminator(fake_x.detach()))
+            fake_loss=torch.mean(discriminator(fake_x.detach()))  #这里不对fake_x进行反向传播
 
             gp=gradient_penalty(discriminator,x_real=x_real,x_fake=fake_x,batch_size=batch_size)
 
@@ -286,5 +286,5 @@ for epoch in range(1000):
         optimizer_G.step()
 
     print(f"Epoch [{epoch + 1}/{1000}]  Loss D: {d_loss.item()}, loss G: {g_loss.item()}")
-    if (epoch+1)%5==0:
+    if (epoch+1)%10==0:
         show_generated_images(epoch+1, generator,labels=y_real)
