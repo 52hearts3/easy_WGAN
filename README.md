@@ -19,3 +19,7 @@ This repository contains an implementation of easy_BigGAN, a simplified but feat
 1.Prepare the dataset (CIFAR-10)
 
 2.Train the model
+
+# BigGAN-2.py
+
+The file BigGAN-2.py introduces attention mechanisms and Batch Normalization, and updates the upsampling mechanism.
